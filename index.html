@@ -240,14 +240,27 @@
             }
         }
 
-        // --- เปลี่ยนเป้าหมายการดึงข้อมูลมาไว้ที่โฟลเดอร์ exam_results ---
+        // --- แก้ไข: ดึงการตั้งค่า โดยค้นหาการตั้งค่าที่ถูกสร้างล่าสุด (หลีกเลี่ยงกฎ Update) ---
         async function fetchQuizSettings() {
             try {
-                // อิงจากโครงสร้างที่คุณใช้บันทึกคะแนนได้ (exam_results) เพื่อไม่ให้ติดปัญหา Permission
-                const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', 'exam_results', '_SYS_CONFIG_');
-                const docSnap = await getDoc(settingsRef);
-                if (docSnap.exists() && docSnap.data().numQuestions) {
-                    configNumQuestions = parseInt(docSnap.data().numQuestions);
+                const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'exam_results'));
+                let latestConfig = null;
+                let latestTime = -1;
+
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    // มองหาไฟล์ที่เป็นตั้งค่า
+                    if (doc.id === '_SYS_CONFIG_' || data.type === 'system_config') {
+                        const time = (data.timestamp && typeof data.timestamp.toMillis === 'function') ? data.timestamp.toMillis() : 0;
+                        if (time > latestTime) {
+                            latestTime = time;
+                            latestConfig = data;
+                        }
+                    }
+                });
+
+                if (latestConfig && latestConfig.numQuestions) {
+                    configNumQuestions = parseInt(latestConfig.numQuestions);
                 }
             } catch (e) {
                 console.error("Error fetching settings:", e);
@@ -381,7 +394,7 @@
             }
         };
 
-        // --- แก้ไขการบันทึกตั้งค่า ให้เซฟลงในแฟ้ม exam_results ---
+        // --- แก้ไข: เพิ่ม(add)ข้อมูลประวัติการตั้งค่าใหม่เสมอ แทนการ Update ข้อมูลเดิม ---
         document.getElementById('btn-save-settings').onclick = async () => {
             const btn = document.getElementById('btn-save-settings');
             const newNum = parseInt(document.getElementById('admin-num-questions').value);
@@ -390,9 +403,12 @@
             btn.disabled = true;
 
             try {
-                // บันทึกซ่อนไว้ในฐานข้อมูลเดียวกับที่บันทึกคะแนน (เพื่อหลีกเลี่ยงการโดนบล็อคจาก Firebase Rules)
-                const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', 'exam_results', '_SYS_CONFIG_');
-                await setDoc(settingsRef, { numQuestions: newNum, type: "system_config" }, { merge: true });
+                // ใช้คำสั่ง addDoc (อนุญาตให้ Create เท่านั้น) โดยสร้างประวัติการตั้งค่าใหม่ไปเลย
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'exam_results'), {
+                    type: "system_config",
+                    numQuestions: newNum,
+                    timestamp: serverTimestamp()
+                });
                 
                 configNumQuestions = newNum;
                 updateUITotalQuestions();
@@ -400,7 +416,7 @@
                 alert(`บันทึกสำเร็จ! ข้อสอบจะสุ่ม ${configNumQuestions} ข้อ ให้นักศึกษาคนถัดไป`);
             } catch (error) {
                 console.error("Error saving settings: ", error);
-                alert("เกิดข้อผิดพลาด: " + error.message); // แสดง Error จริงเพื่อความชัดเจน
+                alert("เกิดข้อผิดพลาด: " + error.message); 
             }
 
             btn.innerText = "บันทึกการตั้งค่า";
@@ -418,9 +434,10 @@
                 } else {
                     let results = [];
                     snap.forEach(doc => {
-                        // เช็คและข้ามไฟล์ตั้งค่า ไม่ให้นำมาโชว์ในตารางคะแนน
-                        if (doc.id !== '_SYS_CONFIG_') {
-                            results.push(doc.data());
+                        const data = doc.data();
+                        // ข้ามเอกสารที่เป็นการตั้งค่า เพื่อไม่ให้โชว์ในตารางคะแนน
+                        if (doc.id !== '_SYS_CONFIG_' && data.type !== 'system_config') {
+                            results.push(data);
                         }
                     });
 
@@ -445,7 +462,7 @@
                 }
             } catch(e) {
                 console.error("Fetch admin data error:", e);
-                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-red-500">เกิดข้อผิดพลาดในการดึงข้อมูล (ตรวจสอบสิทธิ์ Firebase)</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-red-500">เกิดข้อผิดพลาดในการดึงข้อมูล</td></tr>';
             }
         }
 
