@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แบบทดสอบการใช้งาน PLC Mitsubishi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;700&display=swap');
+        body { font-family: 'Prompt', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        .hidden { display: none; }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(226, 232, 240, 0.8); }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="fixed inset-0 bg-white flex flex-col items-center justify-center z-[100]">
+        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-600 mb-4"></div>
+        <p id="loading-text" class="text-slate-600">กำลังเชื่อมต่อระบบ...</p>
+    </div>
+
+    <!-- Start Page -->
+    <div id="start-page" class="max-w-md w-full glass-card p-8 rounded-3xl shadow-xl hidden fade-in relative">
+        <button id="btn-admin-login" class="absolute top-4 right-4 text-xs text-slate-400 hover:text-blue-600">สำหรับผู้สอน</button>
+        <div class="text-center mb-8">
+            <div class="bg-blue-100 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+            </div>
+            <h1 class="text-2xl font-bold text-slate-800 mb-2">Mitsubishi PLC Quiz</h1>
+            <p class="text-slate-500 text-sm">แบบทดสอบความรู้พื้นฐาน - ระดับสูง</p>
+        </div>
+        <div class="space-y-5">
+            <div>
+                <label class="block text-sm font-medium mb-1 text-slate-700">ชื่อ - นามสกุล</label>
+                <input type="text" id="student-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="ระบุชื่อของคุณ">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1 text-slate-700">รหัสนักศึกษา / รหัสพนักงาน</label>
+                <input type="text" id="student-id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="ระบุรหัสประจำตัว">
+            </div>
+            <button id="btn-start" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-200 active:scale-95">เริ่มทำแบบทดสอบ</button>
+        </div>
+    </div>
+
+    <!-- Quiz Page -->
+    <div id="quiz-page" class="max-w-2xl w-full glass-card p-6 md:p-10 rounded-3xl shadow-xl hidden fade-in">
+        <div class="flex justify-between items-center mb-8">
+            <div class="px-4 py-1 bg-blue-50 rounded-full">
+                <span class="text-blue-700 font-bold text-sm">ข้อที่: <span id="current-question-num">1</span> / 50</span>
+            </div>
+            <div id="timer" class="text-blue-600 font-mono text-xl font-bold">00:00</div>
+        </div>
+        <div id="question-container" class="mb-10">
+            <h2 id="question-text" class="text-xl md:text-2xl font-bold text-slate-800 mb-8 leading-relaxed">กำลังโหลดคำถาม...</h2>
+            <div id="options-container" class="grid grid-cols-1 gap-4"></div>
+        </div>
+        <button id="btn-next" class="w-full transition-all duration-300" disabled>กรุณาเลือกคำตอบ</button>
+    </div>
+
+    <!-- Result Page -->
+    <div id="result-page" class="max-w-md w-full glass-card p-10 rounded-3xl shadow-xl hidden fade-in text-center">
+        <div class="mb-6">
+            <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800">ส่งคำตอบสำเร็จ!</h2>
+        </div>
+        <div class="bg-slate-50 rounded-2xl p-6 mb-8 text-left space-y-4 border border-slate-100">
+            <p class="text-sm flex justify-between"><span class="text-slate-500">ผู้เข้าสอบ:</span> <span id="res-name" class="font-bold"></span></p>
+            <p class="text-sm flex justify-between"><span class="text-slate-500">รหัส:</span> <span id="res-id" class="font-bold"></span></p>
+            <p class="text-xl flex justify-between border-t pt-4"><span class="text-slate-700 font-bold">คะแนน:</span> <span class="text-blue-600 font-black"><span id="res-score"></span> / 50</span></p>
+        </div>
+        <p id="save-status" class="text-xs text-slate-400 mb-6">กำลังบันทึกคะแนน...</p>
+        <button onclick="location.reload()" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900 transition">กลับสู่หน้าหลัก</button>
+    </div>
+
+    <!-- Admin Page -->
+    <div id="admin-page" class="max-w-5xl w-full glass-card p-8 rounded-3xl shadow-xl hidden fade-in">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-slate-800">รายงานผลการสอบ</h2>
+            <div class="flex gap-2">
+                <button id="btn-export-all" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm">ดาวน์โหลด Excel</button>
+                <button id="btn-close-admin" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm">ปิด</button>
+            </div>
+        </div>
+        <div class="overflow-x-auto rounded-xl border border-slate-100">
+            <table class="w-full text-left text-sm" id="admin-table">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="p-4 border-b">วันที่</th>
+                        <th class="p-4 border-b">รหัส</th>
+                        <th class="p-4 border-b">ชื่อ</th>
+                        <th class="p-4 border-b">คะแนน</th>
+                        <th class="p-4 border-b">เวลาที่ใช้</th>
+                        <th class="p-4 border-b">จำนวนครั้งสลับจอ</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-table-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Cheat Detection Modal -->
+    <div id="cheat-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white p-8 rounded-3xl text-center max-w-sm shadow-2xl">
+            <h3 class="text-xl font-bold text-red-600 mb-2">แจ้งเตือน!</h3>
+            <p class="text-slate-600 mb-6 italic text-sm">ห้ามเปลี่ยนหน้าจอหรือสลับแอปพลิเคชันในระหว่างการสอบ ข้อมูลนี้จะถูกบันทึกไว้</p>
+            <button onclick="document.getElementById('cheat-modal').classList.add('hidden')" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold w-full">เข้าใจแล้ว</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // คัดเลือกคำถาม 50 ข้อ เกี่ยวกับ PLC Mitsubishi
+        const masterQuestions = [
+            // ชุด 30 ข้อแรก (พื้นฐานและฮาร์ดแวร์)
+            { q: "PLC ย่อมาจากคำว่าอะไร?", options: ["Programmable Logic Controller", "Personal Logic Computer", "Process Line Control", "Primary Logic Circuit"], correct: 0 },
+            { q: "ซอฟต์แวร์ใดใช้สำหรับเขียนโปรแกรม PLC Mitsubishi รุ่น FX5U หรือ iQ-F Series?", options: ["GX Developer", "GX Works2", "GX Works3", "MT Works2"], correct: 2 },
+            { q: "อุปกรณ์ Input ของ PLC Mitsubishi (เช่น สวิตช์, เซนเซอร์) ใช้ตัวอักษรใดเป็นสัญลักษณ์?", options: ["Y", "M", "X", "D"], correct: 2 },
+            { q: "อุปกรณ์ Output ของ PLC Mitsubishi (เช่น หลอดไฟ, แมกเนติกคอนแทคเตอร์) ใช้ตัวอักษรใด?", options: ["X", "Y", "M", "T"], correct: 1 },
+            { q: "รีเลย์ภายใน (Internal Relay หรือ Auxiliary Relay) ใน PLC Mitsubishi ใช้ตัวอักษรใด?", options: ["M", "R", "D", "C"], correct: 0 },
+            { q: "หน้าสัมผัสปกติเปิด (Normally Open - NO) ในภาษา Ladder ใช้คำสั่งพื้นฐานใด?", options: ["LDI", "LD", "OUT", "SET"], correct: 1 },
+            { q: "หน้าสัมผัสปกติปิด (Normally Closed - NC) ในภาษา Ladder ใช้คำสั่งพื้นฐานใด?", options: ["LDI", "LD", "RST", "END"], correct: 0 },
+            { q: "การทำ Self-holding หรือ Latching ให้วงจรทำงานค้างไว้ ต้องนำหน้าสัมผัสของ Output มาต่อแบบใด?", options: ["ต่ออนุกรมกับ Input", "ต่อขนานกับ Input", "ต่ออนุกรมกับ Output", "ไม่ต้องต่อ"], correct: 1 },
+            { q: "Timer (ตัวตั้งเวลา) ใน PLC Mitsubishi ใช้ตัวอักษรใด?", options: ["C", "D", "T", "M"], correct: 2 },
+            { q: "Counter (ตัวนับจำนวน) ใน PLC Mitsubishi ใช้ตัวอักษรใด?", options: ["T", "C", "D", "R"], correct: 1 },
+            { q: "Data Register (หน่วยความจำสำหรับเก็บค่าตัวเลข 16-bit/32-bit) ใช้ตัวอักษรใด?", options: ["M", "X", "Y", "D"], correct: 3 },
+            { q: "สายโหลดโปรแกรม (Programming Cable) สำหรับ PLC รุ่น FX3U/FX5U ส่วนใหญ่มักเป็นพอร์ตแบบใดที่ฝั่ง PLC?", options: ["RS-232", "USB Mini-B", "Ethernet (RJ45)", "ถูกทั้ง USB Mini-B และ Ethernet"], correct: 3 },
+            { q: "ไฟสถานะ 'RUN' บนตัวเครื่อง PLC สีเขียวสว่างค้าง หมายถึงอะไร?", options: ["PLC กำลังรอรับโปรแกรม", "PLC มีข้อผิดพลาดทางฮาร์ดแวร์", "PLC กำลังประมวลผลโปรแกรมและสั่งงาน", "ไฟเลี้ยง PLC ตก"], correct: 2 },
+            { q: "ไฟสถานะ 'ERR' (Error) สีแดงกระพริบ หมายถึงอะไร?", options: ["แบตเตอรี่ใกล้หมด", "เกิดข้อผิดพลาดของโปรแกรม (Syntax/Logic Error)", "PLC ทำงานปกติ", "กำลังสื่อสารกับคอมพิวเตอร์"], correct: 1 },
+            { q: "แบตเตอรี่ในเครื่อง PLC มีหน้าที่หลักคืออะไร?", options: ["จ่ายไฟให้ Output", "สำรองข้อมูลในหน่วยความจำและนาฬิกา (RTC) เมื่อไฟดับ", "เพิ่มความเร็วในการประมวลผล", "ป้องกันไฟกระชาก"], correct: 1 },
+            { q: "โหมดใดในโปรแกรม GX Works ที่อนุญาตให้ผู้เขียนโปรแกรมแก้ไขโค้ดได้ขณะที่ PLC ยังคงสถานะ RUN อยู่?", options: ["Read from PLC", "Write to PLC", "Online Edit", "Monitor Mode"], correct: 2 },
+            { q: "หากต้องการสั่งให้ Output ทำงานค้างสถานะ (1) โดยไม่ต้องใช้หน้าสัมผัส Latching ควรใช้คำสั่งใด?", options: ["RST", "OUT", "PLS", "SET"], correct: 3 },
+            { q: "คำสั่งใดใช้สำหรับยกเลิกสถานะการทำงานค้าง (เปลี่ยนจาก 1 เป็น 0) ของคำสั่งในข้อที่แล้ว?", options: ["SET", "RST", "PLF", "INV"], correct: 1 },
+            { q: "คำสั่ง PLS (Pulse) ทำหน้าที่อะไร?", options: ["ส่งสัญญาณออก 1 Scan Time เมื่อเงื่อนไขเปลี่ยนจาก 0 เป็น 1", "ส่งสัญญาณค้างไว้ตลอดจนกว่าจะรีเซ็ต", "กระพริบไฟด้วยความถี่ 1 Hz", "สร้างสัญญาณ Analog"], correct: 0 },
+            { q: "คำสั่ง PLF (Pulse Falling) ทำหน้าที่อะไร?", options: ["กระพริบไฟ Output", "ส่งสัญญาณออก 1 Scan Time เมื่อเงื่อนไขเปลี่ยนจาก 1 เป็น 0", "หยุดการทำงานของ PLC", "เพิ่มค่าตัวเลขทีละ 1"], correct: 1 },
+            { q: "Special Relay เบอร์ M8000 ใน PLC FX Series มีหน้าที่อะไร?", options: ["ทำงาน 1 Scan Time แรกเมื่อเปิดเครื่อง", "สลับสถานะ ON/OFF ทุกๆ 1 วินาที", "ON ตลอดเวลาที่ PLC อยู่ในสถานะ RUN (Run Monitor)", "ตรวจสอบแบตเตอรี่อ่อน"], correct: 2 },
+            { q: "Special Relay เบอร์ M8002 ใน PLC FX Series มีหน้าที่อะไร?", options: ["ON ตลอดเวลา", "ทำงาน (ON) เพียง 1 Scan Time แรกเมื่อ PLC เปลี่ยนเป็นสถานะ RUN (Initial Pulse)", "สร้างสัญญาณนาฬิกา", "เคลียร์หน่วยความจำทั้งหมด"], correct: 1 },
+            { q: "การต่อสายวงจร Input แบบ Sink หมายความว่าอย่างไร?", options: ["Common ของ Input ฝั่ง PLC ต่อกับไฟ 24VDC", "Common ของ Input ฝั่ง PLC ต่อกับไฟ 0V", "ต่อสลับขั้วได้", "ใช้ไฟ AC เท่านั้น"], correct: 0 },
+            { q: "Output ของ PLC แบบหน้าสัมผัส Relay มีข้อดีเหนือแบบ Transistor อย่างไร?", options: ["ความถี่ในการตัดต่อสูงมาก", "ไม่มีอายุการใช้งานของหน้าสัมผัส", "สามารถขับโหลดได้ทั้ง AC และ DC และทนกระแสได้สูงกว่า", "ความเร็วในการทำงานเร็วกว่า"], correct: 2 },
+            { q: "Output แบบ Transistor (Sink Type) ของ PLC เหมาะกับงานประเภทใดมากที่สุด?", options: ["ขับมอเตอร์ AC 3 เฟสโดยตรง", "ควบคุมหลอดไฟบ้าน 220VAC", "ขับโหลดที่ต้องการความเร็วสูงและตัดต่อบ่อย เช่น เซอร์โวมอเตอร์ หรือ สเตปปิ้งมอเตอร์", "ขับฮีตเตอร์ทำความร้อนกระแสสูง"], correct: 2 },
+            { q: "คำสั่งใดใช้สำหรับย้ายข้อมูล (Copy Data) จาก Register หนึ่งไปยังอีก Register หนึ่ง?", options: ["ADD", "MOV", "CMP", "INC"], correct: 1 },
+            { q: "หากต้องการเปรียบเทียบค่าว่า D10 มีค่า 'มากกว่า' D20 หรือไม่ ต้องใช้สัญลักษณ์คำสั่งเปรียบเทียบใด?", options: ["=", "<", ">", "<>"], correct: 2 },
+            { q: "โมดูล A/D (Analog to Digital) มีหน้าที่อะไรในระบบ PLC?", options: ["แปลงสวิตช์เปิดปิดให้เป็นตัวเลข", "แปลงสัญญาณอนาล็อก (เช่น 0-10V, 4-20mA) จากเซนเซอร์ให้เป็นข้อมูลดิจิตอล", "แปลงตัวเลขดิจิตอลเป็นสัญญาณอนาล็อกไปคุมอินเวอร์เตอร์", "ขยายสัญญาณดิจิตอลให้แรงขึ้น"], correct: 1 },
+            { q: "โมดูล D/A (Digital to Analog) มีหน้าที่อะไร?", options: ["แปลงข้อมูลดิจิตอลใน PLC ให้ออกมาเป็นสัญญาณแรงดัน/กระแสไฟอนาล็อก", "รับค่าจากเซนเซอร์อุณหภูมิแบบเทอร์โมคัปเปิล", "รับสัญญาณจากเอนโค้ดเดอร์", "แปลงไฟ AC เป็น DC"], correct: 0 },
+            { q: "ข้อควรปฏิบัติ 'สิ่งแรกสุด' ก่อนทำการแก้ไขโปรแกรมในเครื่อง PLC เก่าของโรงงานคืออะไร?", options: ["Format หน่วยความจำทิ้ง", "เขียนโปรแกรมใหม่ทับลงไป (Write to PLC)", "ดึงโปรแกรมเดิมออกจาก PLC มาเก็บสำรองไว้ก่อน (Read from PLC)", "ถอดแบตเตอรี่ออก"], correct: 2 },
+            
+            // ชุด 20 ข้อใหม่ (เน้นการเขียนโปรแกรม และคำสั่งเฉพาะ)
+            { q: "Timer แบบ Retentive (สะสมเวลา) ใน PLC Mitsubishi แตกต่างจาก Timer ปกติอย่างไร?", options: ["นับเวลาได้เร็วกว่า", "เมื่อไฟดับหรือเงื่อนไขหยุดลง ค่าเวลาที่นับได้จะไม่ถูกรีเซ็ตเป็น 0", "สามารถนับถอยหลังได้", "ใช้พื้นที่หน่วยความจำน้อยกว่า"], correct: 1 },
+            { q: "ข้อมูลแบบ 16-bit (Word) ใน PLC สามารถเก็บค่าตัวเลขจำนวนเต็มแบบมีเครื่องหมาย (Signed Decimal) ได้ในช่วงเท่าใด?", options: ["0 ถึง 65535", "-32768 ถึง 32767", "0 ถึง 255", "-128 ถึง 127"], correct: 1 },
+            { q: "หากต้องการเก็บค่าตัวเลขที่มากกว่า 32,767 ต้องใช้คำสั่งที่รองรับข้อมูลขนาดกี่บิต?", options: ["8-bit (Byte)", "16-bit (Word)", "32-bit (Double Word)", "64-bit (Quad Word)"], correct: 2 },
+            { q: "การเติมตัวอักษร 'D' หน้าคำสั่งพื้นฐาน เช่น 'DADD' หรือ 'DMOV' มีความหมายว่าอย่างไร?", options: ["ทำงานแบบ Digital", "ทำงานกับข้อมูลขนาด 32-bit (Double Word)", "เป็นคำสั่งลบข้อมูล (Delete)", "ทำงานเมื่อเงื่อนไขเป็นขอบขาลง (Down)"], correct: 1 },
+            { q: "คำสั่ง CALL และ FEND ใช้สำหรับทำอะไรในการเขียนโปรแกรมแบบ Ladder?", options: ["ติดต่อสื่อสารกับหน้าจอ HMI", "เรียกใช้งานโปรแกรมย่อย (Subroutine)", "บังคับ Output ให้ทำงานทันที", "ตั้งรหัสผ่านให้ PLC"], correct: 1 },
+            { q: "คำสั่ง MC (Master Control) และ MCR (Master Control Reset) มักใช้ในกรณีใด?", options: ["ควบคุมความเร็วมอเตอร์", "จัดกลุ่มและควบคุมเงื่อนไขการทำงานของวงจรทั้งบล็อกพร้อมกัน", "รีเซ็ตค่า Timer ทั้งหมดในโปรแกรม", "สั่งรัน PLC โดยไม่ต้องใช้สวิตช์"], correct: 1 },
+            { q: "สัญลักษณ์ตรวจจับขอบขาขึ้น (Rising Edge) เช่น LDP (Load Pulse) จะทำงานเมื่อใด?", options: ["ทำงานตลอดเวลาที่สวิตช์ถูกกดค้างไว้", "ทำงานเพียง 1 Scan Time เฉพาะตอนที่สัญญาณเปลี่ยนจาก OFF เป็น ON", "ทำงานเมื่อปล่อยสวิตช์", "ทำงานสลับไปมาทุกๆ 1 วินาที"], correct: 1 },
+            { q: "คำสั่ง TRD (Time Read) ใช้สำหรับทำสิ่งใด?", options: ["อ่านค่าเวลาสะสมของ Timer", "อ่านค่าเวลาและวันที่จริง (RTC) จากตัวเครื่อง PLC", "อ่านระยะเวลา Scan Time ของโปรแกรม", "หน่วงเวลาการทำงานของ Output"], correct: 1 },
+            { q: "คำสั่ง SFT (Shift) หรือ SFTR (Shift Right) นิยมใช้ในงานลักษณะใด?", options: ["งานคำนวณสูตรคณิตศาสตร์", "งานควบคุมอุณหภูมิ", "งานเลื่อนบิตข้อมูลหรือจำลองการเคลื่อนที่ของชิ้นงานบนสายพาน", "งานบันทึกข้อมูลลง SD Card"], correct: 2 },
+            { q: "การเขียนโปรแกรมแบบ Step (SFC) เพื่อให้ทำงานตามลำดับขั้น มักใช้อุปกรณ์ใดร่วมกับคำสั่ง STL?", options: ["Data Register (D)", "State Relay (S)", "Timer (T)", "Counter (C)"], correct: 1 },
+            { q: "คำสั่ง MUL (Multiply) และ DIV (Divide) เมื่อทำงานกับข้อมูลแบบ 16-bit ผลลัพธ์จะถูกเก็บไว้อย่างไร?", options: ["เก็บใน Register ตัวเดียว", "เก็บใน Register 2 ตัวติดกัน (กลายเป็น 32-bit)", "ไม่มีการเก็บค่า", "เก็บใน Special Relay"], correct: 1 },
+            { q: "คำสั่ง BCD (Binary Coded Decimal) มีประโยชน์อย่างไรในระบบอุตสาหกรรม?", options: ["แปลงข้อมูลเพื่อแสดงผลบนจอ 7-Segment หรือรับค่าจาก Thumbwheel Switch", "เข้ารหัสป้องกันโปรแกรมถูกก๊อปปี้", "แปลงสัญญาณ Analog เป็น Digital", "บีบอัดขนาดของโปรแกรมให้เล็กลง"], correct: 0 },
+            { q: "คำสั่งใดใน PLC ซีรีส์ FX ที่ออกแบบมาให้สื่อสารกับ Inverter ของ Mitsubishi ผ่านพอร์ต RS-485 ได้อย่างง่ายดาย?", options: ["RS / RS2", "IVCK / IVDR", "PID", "ADPRW"], correct: 1 },
+            { q: "หากต้องการเขียนโปรแกรมควบคุมอุณหภูมิให้คงที่นิ่งที่สุด โดยมีระบบป้อนกลับ (Feedback) ควรใช้ฟังก์ชันใด?", options: ["INC / DEC", "CMP / ZCP", "PID Control", "ALT"], correct: 2 },
+            { q: "คำว่า 'Scan Time' ของ PLC หมายถึงอะไร?", options: ["เวลาที่ใช้ดาวน์โหลดโปรแกรมลงเครื่อง", "ระยะเวลาที่ PLC ใช้ประมวลผลคำสั่งตั้งแต่ต้นจนจบ 1 รอบ (รวมรับส่ง I/O)", "อายุการใช้งานของแบตเตอรี่สำรอง", "ความเร็วรอบของมอเตอร์ที่ควบคุม"], correct: 1 },
+            { q: "คำสั่ง CJ (Conditional Jump) ร่วมกับ Pointer (P) นิยมใช้ทำอะไร?", options: ["กระโดดข้ามบรรทัดโปรแกรมที่ไม่ต้องการให้ประมวลผล เพื่อลด Scan Time หรือข้ามขั้นตอน", "ล้างข้อมูลในหน่วยความจำทั้งหมด", "เชื่อมต่อ PLC 2 เครื่องเข้าด้วยกัน", "กระโดดกลับไปบรรทัดแรกสุดเสมอ"], correct: 0 },
+            { q: "คำสั่ง ALT (Alternate) มีลักษณะการทำงานเหมือนอุปกรณ์ใดมากที่สุด?", options: ["สวิตช์กดติดปล่อยดับ (Momentary)", "สวิตช์กดติดกดดับ (Toggle / T-Flip Flop)", "รีเลย์หน่วงเวลา (Timer Relay)", "พร็อกซิมิตี้เซนเซอร์ (Proximity Sensor)"], correct: 1 },
+            { q: "Index Register (V, Z) ใน PLC Mitsubishi มีหน้าที่หลักคืออะไร?", options: ["เก็บค่าอุณหภูมิ", "ใช้ปรับเปลี่ยนตำแหน่ง Address ของอุปกรณ์ทางอ้อม (Indirect Addressing)", "ใช้ตั้งรหัสผ่านให้เครื่องจักร", "ใช้สร้างจังหวะกระพริบของหลอดไฟ"], correct: 1 },
+            { q: "คำสั่ง ZCP (Zone Compare) ทำหน้าที่อะไร?", options: ["เปรียบเทียบข้อมูลว่าตัวเลขเป้าหมายอยู่ในช่วง (Zone) ที่กำหนดหรือไม่ (น้อยกว่า, อยู่ใน, มากกว่า)", "สั่งให้เครื่องจักรเคลื่อนที่เข้าสู่โซนปลอดภัย", "แบ่งหน่วยความจำ PLC ออกเป็นโซนๆ", "ตรวจสอบความผิดปกติของระบบ Network"], correct: 0 },
+            { q: "ระบบ Watchdog Timer (WDT) ใน PLC ทำหน้าที่อะไร?", options: ["ตั้งเวลาเตือนให้บำรุงรักษาเครื่องจักร", "นับเวลาถอยหลังเพื่อปิดเครื่องอัตโนมัติ", "ตรวจสอบว่าโปรแกรมใช้เวลาประมวลผลนานผิดปกติ (เช่น เกิด Infinite Loop) หรือไม่", "ควบคุมเวลาเปิดปิดไฟหน้าจอตู้คอนโทรล"], correct: 2 }
+        ];
+
+        // ==========================================
+        // การตั้งค่า Firebase ตาม apikey.txt
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyCr-ugfjt5-sIFyR9WbjIkB1RcAxrAnFs0",
+            authDomain: "mechatronicsquiz.firebaseapp.com",
+            projectId: "mechatronicsquiz",
+            storageBucket: "mechatronicsquiz.firebasestorage.app",
+            messagingSenderId: "287504623458",
+            appId: "1:287504623458:web:cd6610d00a735b034b2e3b",
+            measurementId: "G-B8YTE99S3G"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'mitsubishi-plc-quiz-th-v1'; // เปลี่ยน appId ภายในเพื่อให้แยกข้อมูลจากชุดเก่า
+
+        let isFirebaseActive = false, currentUser = null, score = 0, currentIdx = 0;
+        let startTime, timerInterval, cheatCount = 0, selectedOption = null, selectedQuestions = [];
+
+        async function init() {
+            try {
+                // Initialize Anonymous Auth to allow saving scores without user login
+                await signInAnonymously(auth);
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        currentUser = user;
+                        isFirebaseActive = true;
+                        document.getElementById('loading-screen').classList.add('hidden');
+                        document.getElementById('start-page').classList.remove('hidden');
+                    }
+                });
+            } catch (e) {
+                console.error("Firebase init error:", e);
+                // Fallback: ยอมให้ทำข้อสอบออฟไลน์ได้ถ้าเชื่อมต่อไม่ได้
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('start-page').classList.remove('hidden');
+            }
+        }
+
+        document.getElementById('btn-start').onclick = () => {
+            const name = document.getElementById('student-name').value.trim();
+            const sid = document.getElementById('student-id').value.trim();
+            if (!name || !sid) return alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+
+            selectedQuestions = [...masterQuestions].sort(() => Math.random() - 0.5);
+            document.getElementById('start-page').classList.add('hidden');
+            document.getElementById('quiz-page').classList.remove('hidden');
+            
+            startTime = new Date();
+            timerInterval = setInterval(updateTimer, 1000);
+            displayQuestion();
+
+            // แจ้งเตือนสลับจอ (Cheat Detection)
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden && !document.getElementById('quiz-page').classList.contains('hidden')) {
+                    cheatCount++;
+                    document.getElementById('cheat-modal').classList.remove('hidden');
+                }
+            });
+        };
+
+        function updateTimer() {
+            const diff = new Date(new Date() - startTime);
+            document.getElementById('timer').innerText = `${String(diff.getUTCMinutes()).padStart(2,'0')}:${String(diff.getUTCSeconds()).padStart(2,'0')}`;
+        }
+
+        function displayQuestion() {
+            const data = selectedQuestions[currentIdx];
+            const btnNext = document.getElementById('btn-next');
+            document.getElementById('current-question-num').innerText = currentIdx + 1;
+            document.getElementById('question-text').innerText = data.q;
+            
+            const container = document.getElementById('options-container');
+            container.innerHTML = ''; selectedOption = null;
+            btnNext.disabled = true;
+            btnNext.className = "w-full bg-slate-200 text-slate-400 font-bold py-4 rounded-xl cursor-not-allowed";
+
+            data.options.forEach((opt, i) => {
+                const b = document.createElement('button');
+                b.className = "w-full text-left p-4 bg-white border border-slate-200 rounded-2xl hover:border-blue-400 hover:bg-blue-50 transition-all font-medium text-slate-700";
+                b.innerText = opt;
+                b.onclick = () => {
+                    Array.from(container.children).forEach(c => c.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-50', 'border-blue-400'));
+                    b.classList.add('ring-2', 'ring-blue-500', 'bg-blue-50', 'border-blue-400');
+                    selectedOption = i;
+                    btnNext.disabled = false;
+                    btnNext.innerText = (currentIdx === selectedQuestions.length - 1) ? "ส่งคำตอบ" : "ข้อถัดไป";
+                    btnNext.className = "w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-100 cursor-pointer transition-all";
+                };
+                container.appendChild(b);
+            });
+        }
+
+        document.getElementById('btn-next').onclick = async () => {
+            if (selectedOption === selectedQuestions[currentIdx].correct) score++;
+            if (currentIdx < selectedQuestions.length - 1) {
+                currentIdx++; displayQuestion();
+            } else {
+                finishQuiz();
+            }
+        };
+
+        async function finishQuiz() {
+            clearInterval(timerInterval);
+            document.getElementById('quiz-page').classList.add('hidden');
+            document.getElementById('loading-screen').classList.remove('hidden');
+            document.getElementById('loading-text').innerText = "กำลังประมวลผล...";
+
+            const name = document.getElementById('student-name').value;
+            const sid = document.getElementById('student-id').value;
+            const timeTaken = document.getElementById('timer').innerText;
+
+            if (isFirebaseActive) {
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'exam_results'), {
+                        student_name: name, 
+                        student_id: sid, 
+                        score: score, 
+                        total_score: 50, 
+                        time_taken: timeTaken,
+                        cheating_attempts: cheatCount, 
+                        timestamp: serverTimestamp()
+                    });
+                    document.getElementById('save-status').innerText = "บันทึกคะแนนเข้าสู่ระบบแล้ว";
+                    document.getElementById('save-status').classList.remove('text-slate-400');
+                    document.getElementById('save-status').classList.add('text-green-500');
+                } catch(e) {
+                    console.error("Save error:", e);
+                    document.getElementById('save-status').innerText = "เกิดข้อผิดพลาดในการบันทึกข้อมูลออนไลน์";
+                    document.getElementById('save-status').classList.remove('text-slate-400');
+                    document.getElementById('save-status').classList.add('text-red-500');
+                }
+            } else {
+                document.getElementById('save-status').innerText = "สถานะออฟไลน์ ไม่สามารถส่งเข้าเซิร์ฟเวอร์ได้";
+            }
+
+            document.getElementById('res-name').innerText = name;
+            document.getElementById('res-id').innerText = sid;
+            document.getElementById('res-score').innerText = score;
+            document.getElementById('loading-screen').classList.add('hidden');
+            document.getElementById('result-page').classList.remove('hidden');
+        }
+
+        // Admin functionality
+        document.getElementById('btn-admin-login').onclick = () => {
+            if (prompt("รหัสผ่านผู้สอน:") === "admin123") {
+                document.getElementById('start-page').classList.add('hidden');
+                document.getElementById('admin-page').classList.remove('hidden');
+                loadAdminData();
+            } else {
+                alert("รหัสผ่านไม่ถูกต้อง");
+            }
+        };
+
+        async function loadAdminData() {
+            const tbody = document.getElementById('admin-table-body');
+            tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center">กำลังโหลดข้อมูล...</td></tr>';
+            try {
+                const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'exam_results'));
+                tbody.innerHTML = '';
+                if(snap.empty) {
+                     tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-500">ยังไม่มีผู้ทำการทดสอบ</td></tr>';
+                } else {
+                    // เก็บข้อมูลลง Array เพื่อทำการจัดเรียง (Sort) ในหน่วยความจำ
+                    let results = [];
+                    snap.forEach(doc => {
+                        results.push(doc.data());
+                    });
+
+                    // เรียงลำดับจากเวลาสอบล่าสุดไปเก่าสุด (Descending)
+                    results.sort((a, b) => {
+                        const timeA = a.timestamp ? a.timestamp.toMillis() : 0;
+                        const timeB = b.timestamp ? b.timestamp.toMillis() : 0;
+                        return timeB - timeA; 
+                    });
+
+                    // นำข้อมูลที่เรียงแล้วมาแสดงผล
+                    results.forEach(d => {
+                        // ปรับให้รองรับข้อมูลเก่าที่เต็ม 30 หรือข้อมูลใหม่ที่เต็ม 50
+                        const maxScore = d.total_score || 50; 
+                        
+                        tbody.innerHTML += `<tr class="border-b hover:bg-slate-50">
+                            <td class="p-4">${d.timestamp?.toDate().toLocaleString('th-TH') || '-'}</td>
+                            <td class="p-4">${d.student_id}</td>
+                            <td class="p-4">${d.student_name}</td>
+                            <td class="p-4 font-bold text-blue-600">${d.score}/${maxScore}</td>
+                            <td class="p-4">${d.time_taken}</td>
+                            <td class="p-4 text-center ${d.cheating_attempts > 0 ? 'text-red-500 font-bold' : 'text-green-500'}">${d.cheating_attempts || 0}</td>
+                        </tr>`;
+                    });
+                }
+            } catch(e) {
+                console.error("Fetch admin data error:", e);
+                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-red-500">เกิดข้อผิดพลาดในการดึงข้อมูล (ตรวจสอบสิทธิ์ Firebase)</td></tr>';
+            }
+        }
+
+        // Export to Excel Functionality (SheetJS)
+        document.getElementById('btn-export-all').onclick = () => {
+            const table = document.getElementById('admin-table');
+            const wb = XLSX.utils.table_to_book(table, {sheet: "Result"});
+            XLSX.writeFile(wb, "PLC_Exam_Results.xlsx");
+        };
+
+        document.getElementById('btn-close-admin').onclick = () => location.reload();
+
+        init();
+    </script>
+</body>
+</html>
