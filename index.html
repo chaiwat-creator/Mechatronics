@@ -31,7 +31,7 @@
                 <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
             </div>
             <h1 class="text-2xl font-bold text-slate-800 mb-2">Mitsubishi PLC Quiz</h1>
-            <p class="text-slate-500 text-sm">แบบทดสอบความรู้พื้นฐาน - ระดับสูง</p>
+            <p class="text-slate-500 text-sm">แบบทดสอบความรู้พื้นฐาน - จำนวน <span id="total-questions-start" class="font-bold text-blue-600">50</span> ข้อ</p>
         </div>
         <div class="space-y-5">
             <div>
@@ -50,7 +50,7 @@
     <div id="quiz-page" class="max-w-2xl w-full glass-card p-6 md:p-10 rounded-3xl shadow-xl hidden fade-in">
         <div class="flex justify-between items-center mb-8">
             <div class="px-4 py-1 bg-blue-50 rounded-full">
-                <span class="text-blue-700 font-bold text-sm">ข้อที่: <span id="current-question-num">1</span> / 50</span>
+                <span class="text-blue-700 font-bold text-sm">ข้อที่: <span id="current-question-num">1</span> / <span id="total-questions-quiz">50</span></span>
             </div>
             <div id="timer" class="text-blue-600 font-mono text-xl font-bold">00:00</div>
         </div>
@@ -72,7 +72,7 @@
         <div class="bg-slate-50 rounded-2xl p-6 mb-8 text-left space-y-4 border border-slate-100">
             <p class="text-sm flex justify-between"><span class="text-slate-500">ผู้เข้าสอบ:</span> <span id="res-name" class="font-bold"></span></p>
             <p class="text-sm flex justify-between"><span class="text-slate-500">รหัส:</span> <span id="res-id" class="font-bold"></span></p>
-            <p class="text-xl flex justify-between border-t pt-4"><span class="text-slate-700 font-bold">คะแนน:</span> <span class="text-blue-600 font-black"><span id="res-score"></span> / 50</span></p>
+            <p class="text-xl flex justify-between border-t pt-4"><span class="text-slate-700 font-bold">คะแนน:</span> <span class="text-blue-600 font-black"><span id="res-score"></span> / <span id="total-questions-res">50</span></span></p>
         </div>
         <p id="save-status" class="text-xs text-slate-400 mb-6">กำลังบันทึกคะแนน...</p>
         <button onclick="location.reload()" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900 transition">กลับสู่หน้าหลัก</button>
@@ -81,13 +81,43 @@
     <!-- Admin Page -->
     <div id="admin-page" class="max-w-5xl w-full glass-card p-8 rounded-3xl shadow-xl hidden fade-in">
         <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xl font-bold text-slate-800">รายงานผลการสอบ</h2>
-            <div class="flex gap-2">
-                <button id="btn-export-all" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm">ดาวน์โหลด Excel</button>
-                <button id="btn-close-admin" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm">ปิด</button>
-            </div>
+            <h2 class="text-xl font-bold text-slate-800">จัดการระบบสอบ</h2>
+            <button id="btn-close-admin" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm hover:bg-slate-300 transition">ปิดหน้าต่าง</button>
         </div>
-        <div class="overflow-x-auto rounded-xl border border-slate-100">
+        
+        <!-- Setting Section -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 mb-6 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-4 w-full md:w-auto">
+                <div class="bg-blue-100 p-2 rounded-lg">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </div>
+                <div>
+                    <label class="font-bold text-slate-700 block text-sm">จำนวนข้อสอบที่จะสุ่มให้นักศึกษา:</label>
+                    <div class="flex items-center gap-2 mt-1">
+                        <select id="admin-num-questions" class="border border-slate-300 rounded-lg px-3 py-2 bg-slate-50 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="5">5 ข้อ</option>
+                            <option value="10">10 ข้อ</option>
+                            <option value="15">15 ข้อ</option>
+                            <option value="20">20 ข้อ</option>
+                            <option value="30">30 ข้อ</option>
+                            <option value="40">40 ข้อ</option>
+                            <option value="50">50 ข้อ</option>
+                        </select>
+                        <span class="text-slate-500 text-sm">จากคลัง 50 ข้อ</span>
+                    </div>
+                </div>
+            </div>
+            <button id="btn-save-settings" class="w-full md:w-auto bg-blue-600 text-white px-6 py-3 rounded-xl text-sm font-bold hover:bg-blue-700 transition shadow-md shadow-blue-200">บันทึกการตั้งค่า</button>
+        </div>
+
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-slate-800">รายงานผลการสอบ</h3>
+            <button id="btn-export-all" class="bg-green-600 hover:bg-green-700 transition text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                ดาวน์โหลด Excel
+            </button>
+        </div>
+        <div class="overflow-x-auto rounded-xl border border-slate-100 bg-white">
             <table class="w-full text-left text-sm" id="admin-table">
                 <thead class="bg-slate-50">
                     <tr>
@@ -96,7 +126,7 @@
                         <th class="p-4 border-b">ชื่อ</th>
                         <th class="p-4 border-b">คะแนน</th>
                         <th class="p-4 border-b">เวลาที่ใช้</th>
-                        <th class="p-4 border-b">จำนวนครั้งสลับจอ</th>
+                        <th class="p-4 border-b text-center">จำนวนครั้งสลับจอ</th>
                     </tr>
                 </thead>
                 <tbody id="admin-table-body"></tbody>
@@ -116,11 +146,9 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, serverTimestamp, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // คัดเลือกคำถาม 50 ข้อ เกี่ยวกับ PLC Mitsubishi
         const masterQuestions = [
-            // ชุด 30 ข้อแรก (พื้นฐานและฮาร์ดแวร์)
             { q: "PLC ย่อมาจากคำว่าอะไร?", options: ["Programmable Logic Controller", "Personal Logic Computer", "Process Line Control", "Primary Logic Circuit"], correct: 0 },
             { q: "ซอฟต์แวร์ใดใช้สำหรับเขียนโปรแกรม PLC Mitsubishi รุ่น FX5U หรือ iQ-F Series?", options: ["GX Developer", "GX Works2", "GX Works3", "MT Works2"], correct: 2 },
             { q: "อุปกรณ์ Input ของ PLC Mitsubishi (เช่น สวิตช์, เซนเซอร์) ใช้ตัวอักษรใดเป็นสัญลักษณ์?", options: ["Y", "M", "X", "D"], correct: 2 },
@@ -151,8 +179,6 @@
             { q: "โมดูล A/D (Analog to Digital) มีหน้าที่อะไรในระบบ PLC?", options: ["แปลงสวิตช์เปิดปิดให้เป็นตัวเลข", "แปลงสัญญาณอนาล็อก (เช่น 0-10V, 4-20mA) จากเซนเซอร์ให้เป็นข้อมูลดิจิตอล", "แปลงตัวเลขดิจิตอลเป็นสัญญาณอนาล็อกไปคุมอินเวอร์เตอร์", "ขยายสัญญาณดิจิตอลให้แรงขึ้น"], correct: 1 },
             { q: "โมดูล D/A (Digital to Analog) มีหน้าที่อะไร?", options: ["แปลงข้อมูลดิจิตอลใน PLC ให้ออกมาเป็นสัญญาณแรงดัน/กระแสไฟอนาล็อก", "รับค่าจากเซนเซอร์อุณหภูมิแบบเทอร์โมคัปเปิล", "รับสัญญาณจากเอนโค้ดเดอร์", "แปลงไฟ AC เป็น DC"], correct: 0 },
             { q: "ข้อควรปฏิบัติ 'สิ่งแรกสุด' ก่อนทำการแก้ไขโปรแกรมในเครื่อง PLC เก่าของโรงงานคืออะไร?", options: ["Format หน่วยความจำทิ้ง", "เขียนโปรแกรมใหม่ทับลงไป (Write to PLC)", "ดึงโปรแกรมเดิมออกจาก PLC มาเก็บสำรองไว้ก่อน (Read from PLC)", "ถอดแบตเตอรี่ออก"], correct: 2 },
-            
-            // ชุด 20 ข้อใหม่ (เน้นการเขียนโปรแกรม และคำสั่งเฉพาะ)
             { q: "Timer แบบ Retentive (สะสมเวลา) ใน PLC Mitsubishi แตกต่างจาก Timer ปกติอย่างไร?", options: ["นับเวลาได้เร็วกว่า", "เมื่อไฟดับหรือเงื่อนไขหยุดลง ค่าเวลาที่นับได้จะไม่ถูกรีเซ็ตเป็น 0", "สามารถนับถอยหลังได้", "ใช้พื้นที่หน่วยความจำน้อยกว่า"], correct: 1 },
             { q: "ข้อมูลแบบ 16-bit (Word) ใน PLC สามารถเก็บค่าตัวเลขจำนวนเต็มแบบมีเครื่องหมาย (Signed Decimal) ได้ในช่วงเท่าใด?", options: ["0 ถึง 65535", "-32768 ถึง 32767", "0 ถึง 255", "-128 ถึง 127"], correct: 1 },
             { q: "หากต้องการเก็บค่าตัวเลขที่มากกว่า 32,767 ต้องใช้คำสั่งที่รองรับข้อมูลขนาดกี่บิต?", options: ["8-bit (Byte)", "16-bit (Word)", "32-bit (Double Word)", "64-bit (Quad Word)"], correct: 2 },
@@ -175,9 +201,6 @@
             { q: "ระบบ Watchdog Timer (WDT) ใน PLC ทำหน้าที่อะไร?", options: ["ตั้งเวลาเตือนให้บำรุงรักษาเครื่องจักร", "นับเวลาถอยหลังเพื่อปิดเครื่องอัตโนมัติ", "ตรวจสอบว่าโปรแกรมใช้เวลาประมวลผลนานผิดปกติ (เช่น เกิด Infinite Loop) หรือไม่", "ควบคุมเวลาเปิดปิดไฟหน้าจอตู้คอนโทรล"], correct: 2 }
         ];
 
-        // ==========================================
-        // การตั้งค่า Firebase ตาม apikey.txt
-        // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyCr-ugfjt5-sIFyR9WbjIkB1RcAxrAnFs0",
             authDomain: "mechatronicsquiz.firebaseapp.com",
@@ -191,29 +214,52 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = 'mitsubishi-plc-quiz-th-v1'; // เปลี่ยน appId ภายในเพื่อให้แยกข้อมูลจากชุดเก่า
+        const appId = 'mitsubishi-plc-quiz-th-v1';
 
         let isFirebaseActive = false, currentUser = null, score = 0, currentIdx = 0;
         let startTime, timerInterval, cheatCount = 0, selectedOption = null, selectedQuestions = [];
+        let configNumQuestions = 50;
 
         async function init() {
             try {
-                // Initialize Anonymous Auth to allow saving scores without user login
                 await signInAnonymously(auth);
-                onAuthStateChanged(auth, (user) => {
+                onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         currentUser = user;
                         isFirebaseActive = true;
+                        await fetchQuizSettings(); // ดึงค่าการตั้งค่าก่อนเข้าหน้าแรก
                         document.getElementById('loading-screen').classList.add('hidden');
                         document.getElementById('start-page').classList.remove('hidden');
                     }
                 });
             } catch (e) {
                 console.error("Firebase init error:", e);
-                // Fallback: ยอมให้ทำข้อสอบออฟไลน์ได้ถ้าเชื่อมต่อไม่ได้
+                updateUITotalQuestions(); 
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('start-page').classList.remove('hidden');
             }
+        }
+
+        // --- เปลี่ยนเป้าหมายการดึงข้อมูลมาไว้ที่โฟลเดอร์ exam_results ---
+        async function fetchQuizSettings() {
+            try {
+                // อิงจากโครงสร้างที่คุณใช้บันทึกคะแนนได้ (exam_results) เพื่อไม่ให้ติดปัญหา Permission
+                const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', 'exam_results', '_SYS_CONFIG_');
+                const docSnap = await getDoc(settingsRef);
+                if (docSnap.exists() && docSnap.data().numQuestions) {
+                    configNumQuestions = parseInt(docSnap.data().numQuestions);
+                }
+            } catch (e) {
+                console.error("Error fetching settings:", e);
+            }
+            updateUITotalQuestions();
+        }
+
+        function updateUITotalQuestions() {
+            document.getElementById('total-questions-start').innerText = configNumQuestions;
+            document.getElementById('total-questions-quiz').innerText = configNumQuestions;
+            document.getElementById('total-questions-res').innerText = configNumQuestions;
+            document.getElementById('admin-num-questions').value = configNumQuestions;
         }
 
         document.getElementById('btn-start').onclick = () => {
@@ -221,7 +267,10 @@
             const sid = document.getElementById('student-id').value.trim();
             if (!name || !sid) return alert("กรุณากรอกข้อมูลให้ครบถ้วน");
 
-            selectedQuestions = [...masterQuestions].sort(() => Math.random() - 0.5);
+            selectedQuestions = [...masterQuestions]
+                .sort(() => Math.random() - 0.5)
+                .slice(0, configNumQuestions);
+
             document.getElementById('start-page').classList.add('hidden');
             document.getElementById('quiz-page').classList.remove('hidden');
             
@@ -229,7 +278,6 @@
             timerInterval = setInterval(updateTimer, 1000);
             displayQuestion();
 
-            // แจ้งเตือนสลับจอ (Cheat Detection)
             document.addEventListener('visibilitychange', () => {
                 if (document.hidden && !document.getElementById('quiz-page').classList.contains('hidden')) {
                     cheatCount++;
@@ -295,7 +343,7 @@
                         student_name: name, 
                         student_id: sid, 
                         score: score, 
-                        total_score: 50, 
+                        total_score: configNumQuestions,
                         time_taken: timeTaken,
                         cheating_attempts: cheatCount, 
                         timestamp: serverTimestamp()
@@ -320,7 +368,9 @@
             document.getElementById('result-page').classList.remove('hidden');
         }
 
-        // Admin functionality
+        // ==========================================
+        // Admin & Settings Functionality
+        // ==========================================
         document.getElementById('btn-admin-login').onclick = () => {
             if (prompt("รหัสผ่านผู้สอน:") === "admin123") {
                 document.getElementById('start-page').classList.add('hidden');
@@ -329,6 +379,32 @@
             } else {
                 alert("รหัสผ่านไม่ถูกต้อง");
             }
+        };
+
+        // --- แก้ไขการบันทึกตั้งค่า ให้เซฟลงในแฟ้ม exam_results ---
+        document.getElementById('btn-save-settings').onclick = async () => {
+            const btn = document.getElementById('btn-save-settings');
+            const newNum = parseInt(document.getElementById('admin-num-questions').value);
+            
+            btn.innerText = "กำลังบันทึก...";
+            btn.disabled = true;
+
+            try {
+                // บันทึกซ่อนไว้ในฐานข้อมูลเดียวกับที่บันทึกคะแนน (เพื่อหลีกเลี่ยงการโดนบล็อคจาก Firebase Rules)
+                const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', 'exam_results', '_SYS_CONFIG_');
+                await setDoc(settingsRef, { numQuestions: newNum, type: "system_config" }, { merge: true });
+                
+                configNumQuestions = newNum;
+                updateUITotalQuestions();
+
+                alert(`บันทึกสำเร็จ! ข้อสอบจะสุ่ม ${configNumQuestions} ข้อ ให้นักศึกษาคนถัดไป`);
+            } catch (error) {
+                console.error("Error saving settings: ", error);
+                alert("เกิดข้อผิดพลาด: " + error.message); // แสดง Error จริงเพื่อความชัดเจน
+            }
+
+            btn.innerText = "บันทึกการตั้งค่า";
+            btn.disabled = false;
         };
 
         async function loadAdminData() {
@@ -340,29 +416,28 @@
                 if(snap.empty) {
                      tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-500">ยังไม่มีผู้ทำการทดสอบ</td></tr>';
                 } else {
-                    // เก็บข้อมูลลง Array เพื่อทำการจัดเรียง (Sort) ในหน่วยความจำ
                     let results = [];
                     snap.forEach(doc => {
-                        results.push(doc.data());
+                        // เช็คและข้ามไฟล์ตั้งค่า ไม่ให้นำมาโชว์ในตารางคะแนน
+                        if (doc.id !== '_SYS_CONFIG_') {
+                            results.push(doc.data());
+                        }
                     });
 
-                    // เรียงลำดับจากเวลาสอบล่าสุดไปเก่าสุด (Descending)
                     results.sort((a, b) => {
                         const timeA = a.timestamp ? a.timestamp.toMillis() : 0;
                         const timeB = b.timestamp ? b.timestamp.toMillis() : 0;
                         return timeB - timeA; 
                     });
 
-                    // นำข้อมูลที่เรียงแล้วมาแสดงผล
                     results.forEach(d => {
-                        // ปรับให้รองรับข้อมูลเก่าที่เต็ม 30 หรือข้อมูลใหม่ที่เต็ม 50
                         const maxScore = d.total_score || 50; 
                         
                         tbody.innerHTML += `<tr class="border-b hover:bg-slate-50">
                             <td class="p-4">${d.timestamp?.toDate().toLocaleString('th-TH') || '-'}</td>
                             <td class="p-4">${d.student_id}</td>
                             <td class="p-4">${d.student_name}</td>
-                            <td class="p-4 font-bold text-blue-600">${d.score}/${maxScore}</td>
+                            <td class="p-4 font-bold text-blue-600">${d.score} / ${maxScore}</td>
                             <td class="p-4">${d.time_taken}</td>
                             <td class="p-4 text-center ${d.cheating_attempts > 0 ? 'text-red-500 font-bold' : 'text-green-500'}">${d.cheating_attempts || 0}</td>
                         </tr>`;
@@ -374,7 +449,6 @@
             }
         }
 
-        // Export to Excel Functionality (SheetJS)
         document.getElementById('btn-export-all').onclick = () => {
             const table = document.getElementById('admin-table');
             const wb = XLSX.utils.table_to_book(table, {sheet: "Result"});
